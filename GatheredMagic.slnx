@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="GatheredMagicBLL/GatheredMagicBLL.csproj" />
+  <Project Path="GatheredMagicCore/GatheredMagicCore.csproj" />
+  <Project Path="GatheredMagicDAL/GatheredMagicDAL.csproj" />
+  <Project Path="GatheredMagicMVC/GatheredMagicMVC.csproj" />
+</Solution>
