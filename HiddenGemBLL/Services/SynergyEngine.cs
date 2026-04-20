@@ -1,7 +1,8 @@
-using HiddenGemShared.Interfaces;
+using System;
+using System.Collections.Generic;
 using HiddenGemShared.Entities;
-using System.Math;
-using System.ComponentModel.DataAnnotations;
+using HiddenGemShared.Models;
+using HiddengGemBLL.Interfaces;
 
 namespace HiddenGemBLL.Services
 {
@@ -10,57 +11,60 @@ namespace HiddenGemBLL.Services
     /// a multi-pass statistical pipeline. It validates synergy by measuring magngitude,
     /// stability, and statistical significance.
     /// </summary>
-    public class SynergyEngine
+    public class SynergyEngine : ISynergyEngine
     {
-        private readonly ICardRepository _repository;
+        private readonly ISynergyFlagService _flagService;
+        private readonly IMathService _mathService;
 
-        // Bayesian constants that acts as baseline decks to stablilize results.
-        private const double Alpha = 2.0;
-        private const double Beta = 10.0;
+        // A Bayesian weight determines how many "real world" decks it takes to overcome the prior belief.
+        private const double BayesianWeight = 100.0;
 
-        public SynergyEngine(ICardRepository repository)
+        public SynergyEngine(ISynergyFlagService flagService, IMathService mathService)
         {
-            _repository = repository;
+            _flagService = flagService;
+            _mathService = mathService;
         }
 
-        /// <summary>
-        /// Executes the Master Pipeline: Bayesian Refinement -> NMPI Calculation -> Hypergeometric filtering.
-        /// It ensures non-staple synergies are persisted with high statistical confidence.
-        /// </summary>
-        /// <param name="commanderId"> Unique ID of the commander card being analyzed.</param>
-        /// <param name="totalDecksInMeta">Total number of decks in the rolling 24-month window.</param>
-        /// <returns></returns>
-        public async Task ProccessCommanderSynergiesAsync(string commanderId, int totalDecksInMeta)
+        public SynergyRelation ProcessRelationship(Card commander, Card card, DeckStats deckstats)
         {
-            // 1. Fetch raw data from DAL
-            var potentialGems = await _repository.GetRawCountsForCommander(commanderId);
-            var commanderDeckCount = await _repository.GetDeckCountForCommander(commanderId);
+            // Pass 1: Bayesian Stability (Dynamic Informed Priors)
+            // Instead of guessing 5%, we pull the score towards the cards global average.
+            // This prevents "niche" cards with 1 decklist from having a 100% synergy score.
+            double dynamicAlpha = stats.GlobalCardProbability * BayesianWeight;
+            double dynamicBeta = BayesianWeight;
 
-            foreach (var card in potentialGems)
+            double pSmoothed = (stats.SharedCount + dynamicAlpha) / (stats.CommanderTotal + dynamicBeta);
+
+            // Pass 2 NPMI Magnitude
+            // Measure Strenght of association relative to global probility using smoothed values.
+            double npmi = _mathService.CalculateNPMI(pSmoothed, stats.GlobalCardProbability);
+
+            // Pass 3 Hypergeometric Validation
+            // Prove the association is statistically signifcant (p < 0.05)
+            // This is the "confidence filter" that ignores coincedental overlaps.
+            double pValue = _mathService.CalculatePValue(
+                stats.TotalUniveseCount,
+                stats.GlobalCardCount,
+                stats.CommanderTotal,
+                stats.SharedCount
+            );
+
+            if (pValue < 0.05 && npmi > 0.3)
             {
-                // Pass 1: Bayesian Refinement (Stability)
-                // Prevents "New Card" hype or small sample sizes from inflating the score.
-                double smoothedCommanderRate = (card.InclusionInCommanderDeck + Alpha) / (commanderDeckCount + Beta);
-                double smoothedGlobalRate = (card.GlobalInclusionCount + Alpha) / (totalDecksInMeta + Beta);
-
-                // Pass 2: NPMI Calculation (Magnitude)
-                // Generic staples are penalized by measuring co-occurence against random chance.
-                double npmiScore = CalculateNPMI(smoothedCommanderRate, smoothedGlobalRate);
-
-                // Pass 3: Hypergeometric Test (Significance)
-                // Discards any pairings where the overlap could be a mathematical fluke.
-                double pValue = CalculateHyperGeometricPValue(
-                    card.InclusionInCommanderDecks,
-                    commanderDeckCount,
-                    card.GlobalInclusionCount,
-                    totalDecksInMeta);
-
-                // Final Valitadion: Saves pairings if p-Value meets 0.05 threshold of significance.
-                if (pValue < 0.05 && npmiScore >0)
+                var relation = new SynergyRelation
                 {
-                    await _repository.CreateSynergyAsync(commanderId, card.Id, npmiScore, pValue, smoothedCommanderRate);
-                }
+                    CommanderId = commander.Id,
+                    CardId = card.Id,
+                    SynergyScore = npmi,
+                    ConfidenceLevel = stats.CommanderTotal > 500 ? "High" : "Low"
+                };
+
+                relation.Flags = _flagService.DetectFlags(commander, card);
+
+                return relation;
             }
+
+            return null;
         }
 
         /// <summary>
