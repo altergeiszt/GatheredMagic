@@ -94,35 +94,5 @@ namespace HiddenGemBLL.Services
         /// <param name="K">Number of Success within the Population (Decks in the meta containing the Card)</param>
         /// <param name="N">Total number of decks in the meta window</param>
         /// <returns>A pValue between 0 and 1 where Values < 0.05 suggests statistical significance.</returns>
-        private double CalculateHypergeometricPValue(int k, int n, int KPopulation, int NPopulation)
-        {
-            // If the card is in 0 decks with the commander, the probability of a fluke is 100%
-            if (k == 0) return 1.0;
-
-            // Calculate the probability of seeing AT LEAST 'k' successes.
-            // Survivability function: P(X >= k)
-            double survivalProbabilityMeasure = 0;
-
-            for (int i = k; i <= Math.Min(n, KPopulation); i++)
-            {
-                survivalProbabilityMeasure += Math.Exp(LogBinomialCoefficient(KPopulation,i) +
-                                                LogBinomialCoefficient(NPopulation-KPopulation, n-i) -
-                                                LogBinomialCoefficient(NPopulation,n));
-            }
-            return Math.Clamp(survivalProbabilityMeasure, 0.0, 1.0);
-        }
-
-        /// <summary>
-        /// Calculates the natural log of a binomial coefficient (nCr)
-        /// Uses Log-Gamma to prevent overflow
-        /// </summary>
-        /// <param name="n"></param>
-        /// <param name="r"></param>
-        /// <returns></returns>
-        private double LogBinomialCoefficient(int n, int r)
-        {
-            if (r < 0 || r > n ) return double.NegativeInfinity;
-            return LogFactorial(n) - (LogFactorial(r) + LogFactorial(n-r));
-        }
     }
 }

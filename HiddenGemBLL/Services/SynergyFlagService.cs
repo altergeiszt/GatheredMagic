@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using HiddenGemShared.Entities;
 using HiddenGemShared.Models;
+using HiddenGemBLL.Interfaces;
 
 namespace HiddenGemBLL.Services
 {
