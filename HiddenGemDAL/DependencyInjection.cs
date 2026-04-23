@@ -1,23 +1,18 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SurrealDb.Net;
 using HiddenGemShared.Interfaces;
-using HidddenGemDAL.Repositories;
+using HiddenGemDAL.Repositories;
 
-namespace HidddenGemDAL;
+namespace HiddenGemDAL;
 
-public class DependencyInjection
+public static class DependencyInjection
 {
     public static IServiceCollection AddHiddenGemData(this IServiceCollection services, string endpoint, string user, string pass)
     {
         // Register SurrealDB Client
-        services.AddSurrealDb(endpoint, "hidden_gem_ns", "main_db",(builder) =>
-        {
-            builder.WithUsername(user).WithPassword(pass);
-        });
+        var options = SurrealDbOptions.Create().WithEndpoint(endpoint).WithNamespace("hidden_gem_ns").WithDatabase("main_db").WithUsername(user).WithPassword(pass).Build();
 
-        // Register the Repositories so the BLL can talk to it via Interface
-        services.AddScoped<ICardRepository, SurrealCardRepository>();
-
+        services.AddSurreal(options, ServiceLifetime.Scoped);
         return services;
     }
 }
