@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using HiddenGemShared.Entities;
-using HiddenGemShared.Models;
-using HiddengGemBLL.Interfaces;
+using HiddenGemBLL.Models;
+using HiddenGemBLL.Interfaces;
 
 namespace HiddenGemBLL.Services
 {
@@ -25,38 +25,39 @@ namespace HiddenGemBLL.Services
             _mathService = mathService;
         }
 
-        public SynergyRelation ProcessRelationship(Card commander, Card card, DeckStats deckstats)
+        public SynergyRelation? ProcessRelationship(Card commander, Card card, DeckStats deckstats)
         {
             // Pass 1: Bayesian Stability (Dynamic Informed Priors)
             // Instead of guessing 5%, we pull the score towards the cards global average.
             // This prevents "niche" cards with 1 decklist from having a 100% synergy score.
-            double dynamicAlpha = stats.GlobalCardProbability * BayesianWeight;
+            double dynamicAlpha = deckstats.GlobalCardProbability * BayesianWeight;
             double dynamicBeta = BayesianWeight;
 
-            double pSmoothed = (stats.SharedCount + dynamicAlpha) / (stats.CommanderTotal + dynamicBeta);
+            double pSmoothed = (deckstats.SharedCount + dynamicAlpha) / (deckstats.CommanderTotal + dynamicBeta);
 
             // Pass 2 NPMI Magnitude
             // Measure Strenght of association relative to global probility using smoothed values.
-            double npmi = _mathService.CalculateNPMI(pSmoothed, stats.GlobalCardProbability);
+            double npmi = _mathService.CalculateNPMI(pSmoothed, deckstats.GlobalCardProbability);
 
             // Pass 3 Hypergeometric Validation
             // Prove the association is statistically signifcant (p < 0.05)
             // This is the "confidence filter" that ignores coincedental overlaps.
             double pValue = _mathService.CalculatePValue(
-                stats.TotalUniveseCount,
-                stats.GlobalCardCount,
-                stats.CommanderTotal,
-                stats.SharedCount
+                deckstats.TotalUniveseCount,
+                deckstats.GlobalCardCount,
+                deckstats.CommanderTotal,
+                deckstats.SharedCount
             );
 
             if (pValue < 0.05 && npmi > 0.3)
             {
                 var relation = new SynergyRelation
                 {
-                    CommanderId = commander.Id,
-                    CardId = card.Id,
+                    In = commander.Id,
+                    Out = card.Id,
                     SynergyScore = npmi,
-                    ConfidenceLevel = stats.CommanderTotal > 500 ? "High" : "Low"
+                    SmoothedRate = pSmoothed,
+                    PValue = pValue
                 };
 
                 relation.Flags = _flagService.DetectFlags(commander, card);
@@ -93,22 +94,20 @@ namespace HiddenGemBLL.Services
         /// <param name="K">Number of Success within the Population (Decks in the meta containing the Card)</param>
         /// <param name="N">Total number of decks in the meta window</param>
         /// <returns>A pValue between 0 and 1 where Values < 0.05 suggests statistical significance.</returns>
-        private double CalculateHypergeometricPValue(int k, int n, int K, int N)
+        private double CalculateHypergeometricPValue(int k, int n, int KPopulation, int NPopulation)
         {
             // If the card is in 0 decks with the commander, the probability of a fluke is 100%
             if (k == 0) return 1.0;
-
-            double logPValue = 0;
 
             // Calculate the probability of seeing AT LEAST 'k' successes.
             // Survivability function: P(X >= k)
             double survivalProbabilityMeasure = 0;
 
-            for (int i = k; i <= Math.Min(n, K); i++)
+            for (int i = k; i <= Math.Min(n, KPopulation); i++)
             {
-                survivalProbabilityMeasure += Math.Exp(LogBinomialCoefficient(K,i) +
-                                                LogBinomialCoefficient(N-K, n-i) -
-                                                LogBinomialCoefficient(N,n));
+                survivalProbabilityMeasure += Math.Exp(LogBinomialCoefficient(KPopulation,i) +
+                                                LogBinomialCoefficient(NPopulation-KPopulation, n-i) -
+                                                LogBinomialCoefficient(NPopulation,n));
             }
             return Math.Clamp(survivalProbabilityMeasure, 0.0, 1.0);
         }
@@ -124,12 +123,6 @@ namespace HiddenGemBLL.Services
         {
             if (r < 0 || r > n ) return double.NegativeInfinity;
             return LogFactorial(n) - (LogFactorial(r) + LogFactorial(n-r));
-        }
-
-        private double LogFactorial(int n)
-        {
-            //System.Math.LogGamma
-            return Math.LogGamma(n + 1);
         }
     }
 }

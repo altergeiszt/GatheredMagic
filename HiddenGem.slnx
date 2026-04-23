@@ -1,6 +1,6 @@
 <Solution>
-  <Project Path="GatheredMagicBLL/HiddenGemBLL.csproj" />
-  <Project Path="GatheredMagicCore/HiddenGemShared.csproj" />
-  <Project Path="GatheredMagicDAL/HiddenGemDAL.csproj" />
-  <Project Path="GatheredMagicMVC/HiddenGemMVC.csproj" />
+  <Project Path="HiddenGemBLL/HiddenGemBLL.csproj" />
+  <Project Path="HiddenGemShared/HiddenGemShared.csproj" />
+  <Project Path="HiddenGemDAL/HiddenGemDAL.csproj" />
+  <Project Path="HiddenGemMVC/HiddenGemMVC.csproj" />
 </Solution>

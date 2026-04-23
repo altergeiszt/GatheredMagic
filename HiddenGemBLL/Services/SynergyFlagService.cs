@@ -20,7 +20,7 @@ namespace HiddenGemBLL.Services
         /// </summary>
         public List<SynergyFlag> DetectFlags (Card commander, Card card)
         {
-            var discoveredFlags = new List<SynergFlag>();
+            var discoveredFlags = new List<SynergyFlag>();
             
             //1. Structural Comparison (Subtypes and Keywords)
             // Handles "Tribal" and direct keyword matching
@@ -33,7 +33,7 @@ namespace HiddenGemBLL.Services
             return discoveredFlags;
         }
 
-        private void DetectStructuralSynergy(Card commander, Card card, List<SynergyFlag> flag)
+        private void DetectStructuralSynergy(Card commander, Card card, List<SynergyFlag> flags)
         {
             // Subtype overlap
             var sharedSubtypes = commander.Subtypes.Intersect(card.Subtypes).ToList();
@@ -50,7 +50,7 @@ namespace HiddenGemBLL.Services
             }     
         }
 
-        private void DetectCategorySynergy(Card commander, Card card, List<SynergyFlag> flag)
+        private void DetectCategorySynergy(Card commander, Card card, List<SynergyFlag> flags)
         {
             //This categorizes and explain why there's a synergy between a Commander and a flag.
 
@@ -69,7 +69,7 @@ namespace HiddenGemBLL.Services
             }
 
             // Pass C Resource Engine
-            if (Commander.RulesText.Contains("Add") && card.RulesText.Contains("Sacrifice"))
+            if (commander.RulesText.Contains("Add") && card.RulesText.Contains("Sacrifice"))
             {
                 flags.Add(new SynergyFlag("Fuel", "Resource Engine", "Possible mana generation/sacrifice loop detected."));
             }

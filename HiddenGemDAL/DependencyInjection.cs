@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SurrealDb.Net;
 using HiddenGemShared.Interfaces;
-using HidddenGemDAL.Repositories;
+using HiddenGemDAL.Repositories;
 
-namespace HidddenGemDAL;
+namespace HiddenGemDAL;
 
 public class DependencyInjection
 {

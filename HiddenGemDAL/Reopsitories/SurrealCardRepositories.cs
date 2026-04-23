@@ -7,7 +7,7 @@ namespace HiddenGemDAL.Repositories
 {
     public class SurrealCardRepository : ICardRepository
     {
-        private readonly ISurrealDbCliet _cliet;
+        private readonly ISurrealDbClient _client;
 
         public SurrealCardRepository (ISurrealDbClient client)
         {
