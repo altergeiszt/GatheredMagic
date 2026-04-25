@@ -37,7 +37,10 @@ namespace HiddenGemBLL.Services
         private void DetectStructuralSynergy(Card commander, Card card, List<SynergyFlag> flags)
         {
             // Subtype overlap
-            var sharedSubtypes = commander.Subtypes.Intersect(card.Subtypes).ToList();
+            var sharedSubtypes = commander.Subtypes
+                .Intersect(card.Subtypes, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            
             if (sharedSubtypes.Any())
             {
                 flags.Add(new SynergyFlag("Archetype", "Shared Subtype", $"Cards share creature types: {string.Join(", ", sharedSubtypes)}."));
