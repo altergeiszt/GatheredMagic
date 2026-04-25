@@ -86,17 +86,5 @@ namespace HiddenGemBLL.Services
             double pmi = Math.Log2(pC_and_X/pX);
             return pmi / (-Math.Log2(pC_and_X));
         }
-
-        public Card ProccessRawCard(RawScrapedCard rawCard)
-        {
-            var card = new Card
-            {
-                Id = rawCard.Id,
-                Name = rawCard.Id,
-                RulesText = rawCard.Text
-            };
-            _normalizer.NormalizeRulesText(card);
-            return card;
-        }
     }
 }
