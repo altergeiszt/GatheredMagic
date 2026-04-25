@@ -15,13 +15,16 @@ namespace HiddenGemBLL.Services
     {
         private readonly ISynergyFlagService _flagService;
         private readonly IMathService _mathService;
+        private readonly ICardNormalizerService _normalizer;
+
 
         // A Bayesian weight determines how many "real world" decks it takes to overcome the prior belief.
         private const double BayesianWeight = 100.0;
 
-        public SynergyEngine(ISynergyFlagService flagService, IMathService mathService)
+        public SynergyEngine(ISynergyFlagService flagService, IMathService mathService, ICardNormalizerService normalizer)
         {
             _flagService = flagService;
+            _normalizer = normalizer;
             _mathService = mathService;
         }
 
@@ -84,15 +87,16 @@ namespace HiddenGemBLL.Services
             return pmi / (-Math.Log2(pC_and_X));
         }
 
-        /// <summary>
-        /// Calculates the statistical significance of a card's inclusion using the
-        /// Hypergeometric Distribution. It determines the probability 
-        /// that the observed overlap is due to random chance.
-        /// </summary>
-        /// <param name="k">Number of Success within the Sample (Decks containing both the commander and gem</param>
-        /// <param name="n">Total number of decks for this specific Commander.</param>
-        /// <param name="K">Number of Success within the Population (Decks in the meta containing the Card)</param>
-        /// <param name="N">Total number of decks in the meta window</param>
-        /// <returns>A pValue between 0 and 1 where Values < 0.05 suggests statistical significance.</returns>
+        public Card ProccessRawCard(RawScrapedCard rawCard)
+        {
+            var card = new Card
+            {
+                Id = rawCard.Id,
+                Name = rawCard.Id,
+                RulesText = rawCard.Text
+            };
+            _normalizer.NormalizeRulesText(card);
+            return card;
+        }
     }
 }
