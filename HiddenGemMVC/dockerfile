@@ -2,7 +2,7 @@
     # 1. Base Runtime Stage
     # -----------------------------------------
     # This creates the lightweight environment where your app will actually run.
-    FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+    FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
     USER $APP_UID
     WORKDIR /app
     EXPOSE 8080
@@ -11,24 +11,24 @@
     # 2. Build Stage
     # -----------------------------------------
     # Uses the heavier SDK image to compile your C# code.
-    FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+    FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
     ARG BUILD_CONFIGURATION=Release
     WORKDIR /src
     
     # Copy all project files first (This caches the restore step to speed up future builds!)
-    COPY ["GatheredMagic/HiddenGemMVC/HiddenGemMVC.csproj", "GatheredMagic/HiddenGemMVC/"]
-    COPY ["GatheredMagic/HiddenGemDAL/HiddenGemDAL.csproj", "GatheredMagic/HiddenGemDAL/"]
-    COPY ["GatheredMagic/HiddenGemBLL/HiddenGemBLL.csproj", "GatheredMagic/HiddenGemBLL/"]
-    COPY ["GatheredMagic/HiddenGemShared/HiddenGemShared.csproj", "GatheredMagic/HiddenGemShared/"]
+    COPY ["HiddenGemMVC/HiddenGemMVC.csproj", "HiddenGemMVC/"]
+    COPY ["HiddenGemDAL/HiddenGemDAL.csproj", "HiddenGemDAL/"]
+    COPY ["HiddenGemBLL/HiddenGemBLL.csproj", "HiddenGemBLL/"]
+    COPY ["HiddenGemShared/HiddenGemShared.csproj", "HiddenGemShared/"]
     
     # Restore NuGet packages for the MVC project (which will implicitly restore its dependencies)
-    RUN dotnet restore "/GatheredMagic/HiddenGemMVC/HiddenGemMVC.csproj"
+    RUN dotnet restore "/src/HiddenGemMVC/HiddenGemMVC.csproj"
     
     # Copy the rest of your actual source code
     COPY . .
     
     # Move into the MVC directory and build the app
-    WORKDIR "/src/GatheredMagic/HiddenGemMVC"
+    WORKDIR "/src/HiddenGemMVC"
     RUN dotnet build "HiddenGemMVC.csproj" -c $BUILD_CONFIGURATION -o /app/build
     
     # -----------------------------------------

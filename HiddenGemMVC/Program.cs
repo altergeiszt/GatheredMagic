@@ -11,7 +11,7 @@ string dbUser = builder.Configuration["SurrealDb:User"] ?? "root";
 string dbPass = builder.Configuration["SurrealDb:Pass"] ?? "root";
 
 string keywordsPath = builder.Configuration["ResourcePaths:KeywordsJson"]
-    ?? Path.Combine(builder.Environment.ContentRootPath, "HiddenGemResources", "Keywords.json");
+    ?? Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "HiddenGemResources", "Keywords.json"));
 
 builder.Services.AddHiddenGemData(dbEndpoint, dbUser, dbPass, keywordsPath);
 

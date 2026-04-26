@@ -12,19 +12,19 @@ services:
   web:
     build:
       context: .
-      dockerfile: GatheredMagic/HiddenGemMVC/Dockerfile
+      dockerfile: HiddenGemMVC/dockerfile
     container_name: hiddengem_web
     ports:
       - "${WEB_PORT}:8080"
     depends_on:
       - surrealdb
     volumes: 
-      - ./GatheredMagic/HiddenGemResources:/app/shared-data
+      - ./HiddenGemResources:/app/shared-data
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ResourcePaths__KeywordsJson=/app/shared-data/Keywords.json
       - SurrealDb__Endpoint=http://surrealdb:8000
-      - SurrealDb__USER=${SURREAL_USER}
+      - SurrealDb__User=${SURREAL_USER}
       - SurrealDb__Pass=${SURREAL_PASS}
     restart: unless-stopped
 

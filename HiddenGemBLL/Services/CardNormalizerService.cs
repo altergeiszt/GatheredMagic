@@ -7,6 +7,7 @@ namespace HiddenGemBLL.Services;
 
 public interface ICardNormalizerService
 {
+    List<string> ParseCreatureSubtypes(string rawTypeLine);
     void NormalizeRulesText(Card card);
 }
 
@@ -18,15 +19,31 @@ public class CardNormalizerService : ICardNormalizerService
 
     public CardNormalizerService(string jsonFilePath)
     {
+        if (string.IsNullOrWhiteSpace(jsonFilePath))
+        {
+            throw new ArgumentException("Keywords.json path is required.", nameof(jsonFilePath));
+        }
+
+        if (!File.Exists(jsonFilePath))
+        {
+            throw new FileNotFoundException("Keywords.json file was not found.", jsonFilePath);
+        }
+
         // Read and deserialize Keywords.json
         var jsonString = File.ReadAllText(jsonFilePath);
-        var parsedData = JsonSerializer.Deserialize<KeywordRoot>(jsonString);
+        var parsedData = JsonSerializer.Deserialize<KeywordRoot>(jsonString)
+            ?? throw new InvalidDataException("Keywords.json could not be deserialized.");
+
+        if (parsedData.Data is null)
+        {
+            throw new InvalidDataException("Keywords.json is missing the 'Data' section.");
+        }
 
         // Load into case-insensitive Hashsets
         var comparer = StringComparer.OrdinalIgnoreCase;
-        _abilityWords = new HashSet<string>(parsedData.Data.AbilityWords, comparer);
-        _keywordAbilities = new HashSet<string>(parsedData.Data.KeywordAbilities, comparer);
-        _keywordActions = new HashSet<string>(parsedData.Data.KeywordActions, comparer);
+        _abilityWords = new HashSet<string>(parsedData.Data.AbilityWords ?? [], comparer);
+        _keywordAbilities = new HashSet<string>(parsedData.Data.KeywordAbilities ?? [], comparer);
+        _keywordActions = new HashSet<string>(parsedData.Data.KeywordActions ?? [], comparer);
     }
 
     public List<string> ParseCreatureSubtypes(string rawTypeLine)
@@ -36,17 +53,15 @@ public class CardNormalizerService : ICardNormalizerService
             return new List<string>();
         }
 
-        // In Magic: The Gathering Cards type lines, a card's type and subtype
-        // are seperated with an em dash ("—") or a hyphen ("-")
-        string[] parts = rawTypeLine.Split(new[] {"—", "-"}, StringSplitOptions.RemoveEmptyEntries);
-
-        // If there are no dashes the card has no subtype
-        if (parts.Length < 2)
+        // In Magic type lines, supertypes/types and subtypes are separated by a dash token.
+        // Match separators with surrounding whitespace to avoid splitting hyphenated words.
+        Match typeLineMatch = Regex.Match(rawTypeLine, @"^\s*.+?\s+[—-]\s+(?<subtypes>.+?)\s*$");
+        if (!typeLineMatch.Success)
         {
             return new List<string>();
         }
 
-        string subTypeString = parts[1];
+        string subTypeString = typeLineMatch.Groups["subtypes"].Value;
 
         var subtypes = subTypeString.Split(new[]{' '},StringSplitOptions.RemoveEmptyEntries)
             .Select(token => token.Trim())
@@ -73,7 +88,7 @@ public class CardNormalizerService : ICardNormalizerService
             foreach (var keyword in canonicalList)
             {
                 // We should use RegEx here with word boundaries (\b) to prevent partial matches
-                string pattern = $@"/b{Regex.Escape(keyword)}\b";
+                string pattern = $@"\b{Regex.Escape(keyword)}\b";
                 if (Regex.IsMatch(rulesText, pattern, RegexOptions.IgnoreCase))
                 {
                     targetCardsList.Add(keyword);
