@@ -28,7 +28,7 @@ namespace HiddenGemBLL.Services
             _mathService = mathService;
         }
 
-        public SynergyRelation? ProcessRelationship(Card commander, Card card, DeckStats deckstats)
+        public SynergyRelation? ProcessRelationship(Card commander, Card deckhand, DeckStats deckstats)
         {
             // Pass 1: Bayesian Stability (Dynamic Informed Priors)
             // Instead of guessing 5%, we pull the score towards the cards global average.
@@ -57,13 +57,13 @@ namespace HiddenGemBLL.Services
                 var relation = new SynergyRelation
                 {
                     In = commander.Id,
-                    Out = card.Id,
+                    Out = deckhand.Id,
                     SynergyScore = npmi,
                     SmoothedRate = pSmoothed,
                     PValue = pValue
                 };
 
-                relation.Flags = _flagService.DetectFlags(commander, card);
+                relation.Flags = _flagService.DetectFlags(commander, deckhand);
 
                 return relation;
             }

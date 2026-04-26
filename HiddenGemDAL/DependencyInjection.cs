@@ -9,7 +9,8 @@ namespace HiddenGemDAL;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddHiddenGemData(this IServiceCollection services, string endpoint, string user, string pass)
+    // Added 'keywordsPath' as a parameter
+    public static IServiceCollection AddHiddenGemData(this IServiceCollection services, string endpoint, string user, string pass, string keywordsPath)
     {
         // Register SurrealDB Client
         var options = SurrealDbOptions.Create()
@@ -22,10 +23,10 @@ public static class DependencyInjection
 
         services.AddSurreal(options, ServiceLifetime.Scoped);
 
-        string keywordsPath = Path.Combine(AppContext.BaseDirectorym "HiddenGemResources","Keywords.json");
-
+        // Register the Normalizer using the path provided by the Host
         services.AddSingleton<ICardNormalizerService>(provider => 
-        new CardNormalizerService(keywordsPath));
+            new CardNormalizerService(keywordsPath));
+            
         return services;
     }
 }

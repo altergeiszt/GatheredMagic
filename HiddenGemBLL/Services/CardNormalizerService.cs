@@ -29,30 +29,55 @@ public class CardNormalizerService : ICardNormalizerService
         _keywordActions = new HashSet<string>(parsedData.Data.KeywordActions, comparer);
     }
 
-public void NormalizeRulesText(Card card)
+    public List<string> ParseCreatureSubtypes(string rawTypeLine)
     {
-        if (string.IsNullOrWhiteSpace(card.RulesText)) return;
-
-        // Clean up existing data to avoid duplicates if reprocessed.
-        card.AbilityWords.Clear();
-        card.KeywordAbilities.Clear();
-        card.KeywordActions.Clear();
-
-        ExtractTokens(card.RulesText, _abilityWords, card.AbilityWords);
-        ExtractTokens(card.RulesText, _keywordAbilities, card.KeywordAbilities);
-        ExtractTokens(card.RulesText, _keywordActions, card.KeywordActions);
-    }
-
-private void ExtractTokens(string rulesText, HashSet<string> canonicalList, List<string> targetCardsList)
-    {
-        foreach (var keyword in canonicalList)
+        if (string.IsNullOrWhiteSpace(rawTypeLine))
         {
-            // We should use RegEx here with word boundaries (\b) to prevent partial matches
-            string pattern = $@"/b{Regex.Escape(keyword)}\b";
-            if (Regex.IsMatch(rulesText, pattern, RegexOptions.IgnoreCase))
+            return new List<string>();
+        }
+
+        // In Magic: The Gathering Cards type lines, a card's type and subtype
+        // are seperated with an em dash ("—") or a hyphen ("-")
+        string[] parts = rawTypeLine.Split(new[] {"—", "-"}, StringSplitOptions.RemoveEmptyEntries);
+
+        // If there are no dashes the card has no subtype
+        if (parts.Length < 2)
+        {
+            return new List<string>();
+        }
+
+        string subTypeString = parts[1];
+
+        var subtypes = subTypeString.Split(new[]{' '},StringSplitOptions.RemoveEmptyEntries)
+            .Select(token => token.Trim())
+            .ToList();
+        
+        return subtypes;
+    }
+    public void NormalizeRulesText(Card card)
+        {
+            if (string.IsNullOrWhiteSpace(card.RulesText)) return;
+
+            // Clean up existing data to avoid duplicates if reprocessed.
+            card.AbilityWords.Clear();
+            card.KeywordAbilities.Clear();
+            card.KeywordActions.Clear();
+
+            ExtractTokens(card.RulesText, _abilityWords, card.AbilityWords);
+            ExtractTokens(card.RulesText, _keywordAbilities, card.KeywordAbilities);
+            ExtractTokens(card.RulesText, _keywordActions, card.KeywordActions);
+        }
+
+    private void ExtractTokens(string rulesText, HashSet<string> canonicalList, List<string> targetCardsList)
+        {
+            foreach (var keyword in canonicalList)
             {
-                targetCardsList.Add(keyword);
+                // We should use RegEx here with word boundaries (\b) to prevent partial matches
+                string pattern = $@"/b{Regex.Escape(keyword)}\b";
+                if (Regex.IsMatch(rulesText, pattern, RegexOptions.IgnoreCase))
+                {
+                    targetCardsList.Add(keyword);
+                }
             }
         }
-    }
 }

@@ -5,6 +5,5 @@ using HiddenGemShared.Entities;
 
 public class SynergyFlagServiceTests
 {
-    [Fact]
-    public void DetectFlags_
+
 }

@@ -1,7 +1,19 @@
+using HiddenGemDAL;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// 1 Pull Database Configuration
+string dbEndpoint = builder.Configuration["SurrealDb:Endpoint"] ?? "localhost:8000";
+string dbUser = builder.Configuration["SurrealDb:User"] ?? "root";
+string dbPass = builder.Configuration["SurrealDb:Pass"] ?? "root";
+
+string keywordsPath = builder.Configuration["ResourcePaths:KeywordsJson"]
+    ?? Path.Combine(builder.Environment.ContentRootPath, "HiddenGemResources", "Keywords.json");
+
+builder.Services.AddHiddenGemData(dbEndpoint, dbUser, dbPass, keywordsPath);
 
 var app = builder.Build();
 
