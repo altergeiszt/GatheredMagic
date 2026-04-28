@@ -13,6 +13,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\HiddenGemShared\HiddenGemShared.csproj" />
+    <ProjectReference Include="..\HiddenGemBLL\HiddenGemBLL.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\HiddenGemResources\Keywords.json" Link="HiddenGemResources\Keywords.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  
 </Project>

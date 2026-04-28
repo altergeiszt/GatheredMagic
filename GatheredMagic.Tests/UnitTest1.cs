@@ -1,246 +1,139 @@
 ﻿namespace GatheredMagic.Tests;
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using HiddenGemBLL.Services;
 using HiddenGemShared.Entities;
+using Xunit;
 
 public class SynergyFlagServiceTests
 {
-    [Fact]
-    public void DetectFlags_AddsSharedSubtypeFlag_WhenCommanderAndCardShareSubtype()
-    {
-        var service = new SynergyFlagService();
-
-        var commander = new Card
-        {
-            Id = "cmdr-1",
-            Name = "Commander",
-            Subtypes = new List<string> {"Elf", "Shaman"},
-            Keywords = new List<string>(),
-            KeywordActions = new List<string>(),
-            AbilityWords = new List<string>(),
-            RulesText = "Add one mana of any color."
-        };
-
-        var card = new Card
-        {
-            Id = "card-1",
-            Name = "Gem card",
-            Subtypes = new List<string> {"Elf"},
-            Keywords = new List<string>(),
-            KeywordActions = new List<string>(),
-            AbilityWords = new List<string>(),
-            RulesText = "Sacrifice another creature."
-        };
-
-        var flags = service.DetectFlags(commander, card);
-
-        Assert.Contains(flags, f => f.Label == "Shared Subtype");
-    }
+    private SynergyFlagService CreateService() => new SynergyFlagService();
 
     [Fact]
-    public void DetectFlags_ReturnEmpty_WhenNoOverlapAndNoResourcePattern()
+    public void DetectFlags_ReturnsEmpty_WhenNoSharedFlagsTrigger()
     {
-        var service = new SynergyFlagService();
+        var svc = CreateService();
+        var a = new Card();
+        var b = new Card();
 
-        var commander = new Card
-        {
-            Id = "cmdr-2",
-            Name = "Commander",
-            Subtypes = new List<string>{"Wizard"},
-            Keywords = new List<string>{"Flying"},
-            KeywordActions = new List<string> {"Draw"},
-            AbilityWords = new List<string> {"Threshold"},
-            RulesText = "Scry 1."
-        };
-
-        var card = new Card
-        {
-            Id = "card-2",
-            Name = "Gem Card",
-            Subtypes = new List<string> {"Zombie"},
-            Keywords = new List<string> {"Trample"},
-            KeywordActions = new List<string>{"Exile"},
-            AbilityWords = new List<string>{"Landfall"},
-            RulesText = "Gain 1 life."
-        };
-
-        var flags = service.DetectFlags(commander, card);
+        var flags = svc.DetectFlags(a, b);
 
         Assert.Empty(flags);
     }
-    
+
     [Fact]
-    public void DetectFlags_AddsSharedSubtypeFlag_WhenCreatureTypeTokensOverlap()
+    public void DetectFlags_IncludesColorIdentity_WhenSharedColors()
     {
-        var service = new SynergyFlagService();
+        var svc = CreateService();
+        var commander = new Card { ColorIdentity = new List<string> { "W", "U", "B", "R", "G" } };
+        var land = new Card { ColorIdentity = new List<string> { "W" } };
+
+        var flags = svc.DetectFlags(commander, land);
+
+        Assert.Contains(flags, f => f.Label == "Color Identity");
+        Assert.Contains(flags, f => f.CreatureType == "Color");
+    }
+
+    [Fact]
+    public void DetectFlags_IsCaseInsensitiveAndDeduplicates_Archetype()
+    {
+        var svc = CreateService();
+        var commander = new Card { CreatureSubtypes = new List<string> { "GIANT", "giant", "ELF" } };
+        var deckhand = new Card { CreatureSubtypes = new List<string> { "Giant", "Elf" } };
+
+        var flags = svc.DetectFlags(commander, deckhand);
+
+        Assert.Contains(flags, f => f.CreatureType == "Archetype");
+        Assert.Equal(1, flags.Count(f => f.CreatureType == "Archetype"));
+    }
+
+    [Fact]
+    public void DetectFlags_ThrowsOnNullArguments()
+    {
+        var svc = CreateService();
+        Assert.Throws<NullReferenceException>(() => svc.DetectFlags(null!, new Card()));
+        Assert.Throws<NullReferenceException>(() => svc.DetectFlags(new Card(), null!));
+    }
+
+    [Fact]
+    public void DetectFlags_ReturnsNone_WhenNoFlagsTrigger()
+    {
+        var svc = CreateService();
+        var commander = new Card
+        {
+            CreatureSubtypes = new List<string> { "Eldrazi" },
+            KeywordAbilities = new List<string> { "Trample" },
+            KeywordActions = new List<string> { "Sacrifice" },
+            ColorIdentity = new List<string> { "U" }
+        };
+
+        var deckhand = new Card
+        {
+            CreatureSubtypes = new List<string> { "Cat" },
+            KeywordAbilities = new List<string> { "Fear" },
+            KeywordActions = new List<string> { "Adapt" },
+            AbilityWords = new List<string> { "Alliance" },
+            ColorIdentity = new List<string> { "W" }
+        };
+
+        var flags = svc.DetectFlags(commander, deckhand);
+
+        Assert.Empty(flags);
+    }
+
+    [Fact]
+    public void DetectFlags_CreatesFuelFlag_WhenActionsOverlap()
+    {
+        var svc = CreateService();
 
         var commander = new Card
         {
-            Id = "cmdr-3",
-            Name = "Commander",
-            CreatureType = " - ELDRAZI Horror",
-            Keywords = new List<string>(),
-            KeywordActions = new List<string>(),
-            AbilityWords = new List<string>(),
+            CreatureSubtypes = new List<string> { "Eldrazi" },
+            KeywordAbilities = new List<string> { "Devoid" },
+            KeywordActions = new List<string> { "Add" },
+            ColorIdentity = new List<string> { "W" },
         };
 
-        var card = new Card
+        var deckhand = new Card
         {
-            Id = "card-3",
-            Name = "Gem Card",
-            CreatureType = "Eldrazi",
-            Keywords = new List<string>(),
-            KeywordActions = new List<string>(),
-            AbilityWords = new List<string>(),
+            CreatureSubtypes = new List<string> { "Elemental" },
+            KeywordAbilities = new List<string> { "Myriad" },
+            KeywordActions = new List<string> { "Add" },
+            ColorIdentity = new List<string> { "B" },
         };
 
-        var flags = service.DetectFlags(commander, card);
+        var flags = svc.DetectFlags(commander, deckhand);
 
-        Assert.Contains(flags, f => f.Label == "Shared Subtype");
+        Assert.Contains(flags, f => f.CreatureType == "Fuel");
+        Assert.Contains(flags, f => f.Label == "Action Synergy");
     }
 
     [Fact]
-    public void DetectFlags_ReturnMultipleFlags_WhenMultipleSynergyRulesTrigger()
+    public void DetectFlags_MultipleFlags_WhenSeveralOverlap()
     {
-        var service = new SynergyFlagService();
+        var svc = CreateService();
 
         var commander = new Card
         {
-            Id = "cmdr-4",
-            Name = "Commander",
-            Subtypes = new List<string>{"Eldrazi","Titan"},
-            Keywords = new List<string>{"Annihalator"},
-            KeywordActions = new List<string>{"Create"},
-            AbilityWords = new List<string>{"Add"},
-            RulesText = "Add an Eldrazi Scion."
+            CreatureSubtypes = new List<string> { "Goblin", "Warlock" },
+            KeywordActions = new List<string> { "Blight" },
+            ColorIdentity = new List<string> { "B", "G", "R" },
         };
 
-        var card = new Card
+        var deckhand = new Card
         {
-            Id = "card-4",
-            Name = "Gem Card 4",
-            Subtypes = new List<string>{"Eldrazi","Scion"},
-            Keywords = new List<string>{"Annihalator"},
-            KeywordActions = new List<string>{"Create"},
-            AbilityWords = new List<string>{"Sacrifice"},
-            RulesText = "Sacrifice for 1 Mana"
+            CreatureSubtypes = new List<string> { "Warlock" },
+            KeywordActions = new List<string> { "Blight" },
+            ColorIdentity = new List<string> { "B", "G" }
         };
 
-        var expectedLabels = new[]
-        {
-            "Shared Subtype",
-            "Keyword Alignment",
-            "Action Synergy",
-            "Resource Engine"
-        };
+        var flags = svc.DetectFlags(commander, deckhand);
 
-        var flags = service.DetectFlags(commander, card);
-
-        var actualLabels = flags.Select(f => f.Label).ToList();
-
-        foreach (var expectedLabel in expectedLabels)
-        {
-            Assert.Contains(expectedLabel, actualLabels);
-        }
-
-        foreach (var expectedLabel in expectedLabels)
-        {
-            Assert.Equal(1, actualLabels.Count(label => label == expectedLabel));
-        }
-    }
-    [Fact]
-    public void DetectFlags_AddsResourceEngine_WhenRulesTextContainsExactCaseAddAndSacrifice()
-    {
-    var service = new SynergyFlagService();
-
-    var commander = new Card
-    {
-        Id = "cmdr-c1-1",
-        Name = "Commander",
-        RulesText = "Add one mana of any color."
-    };
-
-    var card = new Card
-    {
-        Id = "card-c1-1",
-        Name = "Gem",
-        RulesText = "Sacrifice another creature."
-    };
-
-    var flags = service.DetectFlags(commander, card);
-
-    Assert.Contains(flags, f => f.Label == "Resource Engine");
-    }
-
-    [Fact]
-    public void DetectFlags_DoesNotAddResourceEngine_WhenRulesTextUsesDifferentCase()
-    {
-    var service = new SynergyFlagService();
-
-    var commander = new Card
-    {
-        Id = "cmdr-c1-2",
-        Name = "Commander",
-        RulesText = "add one mana of any color."
-    };
-
-    var card = new Card
-    {
-        Id = "card-c1-2",
-        Name = "Gem",
-        RulesText = "sacrifice another creature."
-    };
-
-    var flags = service.DetectFlags(commander, card);
-
-    Assert.DoesNotContain(flags, f => f.Label == "Resource Engine");
-    }
-
-    [Fact]
-    public void DetectFlags_DoesNotAddResourceEngine_WhenSemanticsMatchButLiteralTermsDoNot()
-    {
-    var service = new SynergyFlagService();
-
-    var commander = new Card
-    {
-        Id = "cmdr-c1-3",
-        Name = "Commander",
-        RulesText = "Generate one mana of any color."
-    };
-
-    var card = new Card
-    {
-        Id = "card-c1-3",
-        Name = "Gem",
-        RulesText = "Exile this creature: create mana."
-    };
-
-    var flags = service.DetectFlags(commander, card);
-
-    Assert.DoesNotContain(flags, f => f.Label == "Resource Engine");
-    }
-
-    [Fact]
-    public void DetectFlags_DoesNotAddKeywordAlignment_WhenKeywordCaseDiffers()
-    {
-    var service = new SynergyFlagService();
-
-    var commander = new Card
-    {
-        Id = "cmdr-c1-4",
-        Name = "Commander",
-        Keywords = new List<string> { "Flying" }
-    };
-
-    var card = new Card
-    {
-        Id = "card-c1-4",
-        Name = "Gem",
-        Keywords = new List<string> { "flying" }
-    };
-
-    var flags = service.DetectFlags(commander, card);
-
-    Assert.DoesNotContain(flags, f => f.Label == "Keyword Alignment");
+        Assert.True(flags.Count >= 2);
+        Assert.Contains(flags, f => f.CreatureType == "Archetype");
+        Assert.Contains(flags, f => f.CreatureType == "Fuel");
+        Assert.Contains(flags, f => f.CreatureType == "Color");
     }
 }
