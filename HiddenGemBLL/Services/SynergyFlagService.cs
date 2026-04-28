@@ -46,6 +46,7 @@ namespace HiddenGemBLL.Services
             }
 
             //3. Action or Fuel Synergy
+            // Game Actions
             var sharedActions = commander.KeywordActions
                 .Intersect(deckhand.KeywordActions, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -57,6 +58,7 @@ namespace HiddenGemBLL.Services
             }
 
             //4. Theme or Strategy Synergy
+            // Board state
             var sharedThemes = commander.AbilityWords
                 .Intersect(deckhand.AbilityWords, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -64,7 +66,17 @@ namespace HiddenGemBLL.Services
             if (sharedThemes.Any())
             {
                 discoveredFlags.Add(new SynergyFlag("Multiplier", "Strategy Anchor",
-                $"Bot cards trigger off of: {string.Join(", ", sharedThemes)}"));
+                $"Both cards trigger off of: {string.Join(", ", sharedThemes)}"));
+            }
+
+            var sharedColors = commander.ColorIdentity
+                .Intersect(deckhand.ColorIdentity, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (sharedColors.Any())
+            {
+                discoveredFlags.Add(new SynergyFlag("Color", "Color Identity",
+                $"Both cards are color: {string.Join(", ", sharedColors)}"));
             }
 
             return discoveredFlags;
