@@ -56,8 +56,8 @@ namespace HiddenGemBLL.Services
             {
                 var relation = new SynergyRelation
                 {
-                    In = commander.Id,
-                    Out = deckhand.Id,
+                    CommanderId = commander.Id,
+                    DeckhandId = deckhand.Id,
                     SynergyScore = npmi,
                     SmoothedRate = pSmoothed,
                     PValue = pValue

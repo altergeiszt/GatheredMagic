@@ -6,8 +6,8 @@ public class SynergyRelation
 {
     // SurrealDB Edge Identifiers
     public string Id {get;set;} = string.Empty;
-    public string In {get; set;} = string.Empty;
-    public string Out {get; set;} = string.Empty;
+    public string CommanderId {get; set;} = string.Empty;
+    public string DeckhandId {get; set;} = string.Empty;
 
     // Statical scores
     public double SynergyScore {get; set;}

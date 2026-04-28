@@ -11,10 +11,10 @@ namespace HiddenGemShared.Interfaces
         Task<Card?> GetCardByNameAsync(string cardName);
 
         Task CreateSynergyRelationsAsync(SynergyRelation relation);
-        Task<List<SynergyRelation>> GetSynergiesForCommanderAsync(string Commander);
+        
         // Graph Operations for Synergies (Edges)
         Task CreateSynergyAsync(string commanderId, string cardId, double synergyScore, double pValue, double smoothedRate);
-        Task<IEnumerable<SynergyRelation>> GetSynergiesByCommanderAsync(string commanderId, double minScore = 0.0);
+        
 
         // Batch Operations for the Master Pipeline
         Task UpdateGlobalCountsAsync(Dictionary<string, int> cardCounts);

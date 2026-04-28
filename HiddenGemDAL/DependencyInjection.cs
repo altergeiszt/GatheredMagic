@@ -1,4 +1,4 @@
-﻿using System.IO;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SurrealDb.Net;
 using HiddenGemShared.Interfaces;
@@ -27,6 +27,17 @@ public static class DependencyInjection
         services.AddSingleton<ICardNormalizerService>(provider => 
             new CardNormalizerService(keywordsPath));
             
+        return services;
+    }
+
+    public static IServiceCollection AddDataAccessLayer(this IServiceCollection services, IConfiguration config)
+    {
+        // Configure the SurrealDB Client using our appsettings.json
+        services.AddSurreal(config.GetConnectionString("SurrealDB") ?? "http://localhost:8000");
+
+        // Register the repository
+        services.AddScoped<ICardRepository, SurrealCardRepository>();
+        
         return services;
     }
 }
