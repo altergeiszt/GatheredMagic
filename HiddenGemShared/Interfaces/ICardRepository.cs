@@ -8,7 +8,10 @@ namespace HiddenGemShared.Interfaces
         // CRUD for Cards (Nodes)
         Task<Card> GetCardByIdAsync(string id);
         Task UpsertCardAsync(Card card);
+        Task<Card?> GetCardByNameAsync(string cardName);
 
+        Task CreateSynergyRelationsAsync(SynergyRelation relation);
+        Task<List<SynergyRelation>> GetSynergiesForCommanderAsync(string Commander);
         // Graph Operations for Synergies (Edges)
         Task CreateSynergyAsync(string commanderId, string cardId, double synergyScore, double pValue, double smoothedRate);
         Task<IEnumerable<SynergyRelation>> GetSynergiesByCommanderAsync(string commanderId, double minScore = 0.0);
