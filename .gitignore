@@ -58,3 +58,4 @@ nunit-*.xml
 
 DesignConsiderations/
 HiddenGemResources/
+.fake

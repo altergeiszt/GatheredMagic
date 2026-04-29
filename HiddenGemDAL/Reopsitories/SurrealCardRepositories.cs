@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Text.Json;
 using HiddenGemShared.Entities;
 using HiddenGemShared.Interfaces;
 using SurrealDb.Net;
@@ -47,9 +49,20 @@ namespace HiddenGemDAL.Repositories
 
         public async Task CreateSynergyRelationsAsync(SynergyRelation relation)
         {
-            var query = $@"
-                RELATE card:{relation.CommanderId}->synergy->card:{relation.DeckhandId}
-                CONTENT $relationData;";
+            var relationJson = JsonSerializer.Serialize(relation);
+
+            await _client.Query($"""
+                RELATE card:{relation.CommanderId}->synergizes_with->card:{relation.DeckhandId}
+                CONTENT {relationJson};
+                """);
+        }
+        public async Task<List<SynergyRelation>> GetSynergiesForCommanderAsync(string commanderId)
+        {
+            // Graph Traversal: "Find all outgoing synergy edges starting from this specific Commander"
+            var query = $"SELECT * FROM synergizes_with WHERE in = card:{commanderId};";
+            
+            var response = await _client.Query($"{query}");
+            return response.GetValue<List<SynergyRelation>>(0) ?? new List<SynergyRelation>();
         }
 
         public async Task CreateSynergyAsync(

@@ -2,11 +2,11 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:latest
     container_name: hiddengem_db
-    command: start --log trace --user ${SURREAL_USER} --pass ${SURREAL_PASS} file://data/database.db
+    command: start --log trace --user ${SURREALDB_USER} --pass ${SURREALDB_PASS} rocksdb:///data/database.db
     ports:
       - "${DB_PORT}:8000"
     volumes:
-      - surreal_data:/data
+      - C:/GatheredMagicDB:/data
     restart: unless-stopped
 
   web:
@@ -23,9 +23,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ResourcePaths__KeywordsJson=/app/shared-data/Keywords.json
-      - SurrealDb__Endpoint=http://surrealdb:8000
-      - SurrealDb__User=${SURREAL_USER}
-      - SurrealDb__Pass=${SURREAL_PASS}
+      - SurrealDb__Endpoint=http://surrealdb:8080
+      - SurrealDb__User=${SURREALDB_USER}
+      - SurrealDb__Pass=${SURREALDB_PASS}
+      - SurrealDb__Namespace={SURREALDB_NS}
+      - SurrealDb__Database={SURREALDB_DB}
     restart: unless-stopped
 
 volumes:
